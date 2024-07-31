@@ -21,11 +21,17 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
 @dataclass
 class ModelArguments:
+    """
+    Arguments pertaining to the model architecture.
+    """
     model_name_or_path: Optional[str] = field(default="Qwen/Qwen-7B")
 
 
 @dataclass
 class DataArguments:
+    """
+    Arguments pertaining to the data and data preprocessing.
+    """
     data_path: str = field(
         default=None, metadata={"help": "Path to the training data."}
     )
@@ -37,6 +43,9 @@ class DataArguments:
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
+    """
+    Arguments pertaining to the training process.
+    """
     cache_dir: Optional[str] = field(default=None)
     optim: str = field(default="adamw_torch")
     model_max_length: int = field(
@@ -51,11 +60,23 @@ class TrainingArguments(transformers.TrainingArguments):
 
 @dataclass
 class LoraArguments:
+    """
+    Arguments pertaining to the LoRA (Low-Rank Adaptation) configuration.
+
+    Attributes:
+        lora_r (int): The rank of the LoRA weight matrices.
+        lora_alpha (int): The alpha value for the LoRA weight matrices.
+        lora_dropout (float): The dropout rate for the LoRA weight matrices.
+        lora_target_modules (List[str]): The list of module names to apply LoRA to.
+        lora_weight_path (str): The path to load pre-trained LoRA weights from.
+        lora_bias (str): The bias type for the LoRA weight matrices. Can be 'none', 'all', or 'lora_only'.
+        q_lora (bool): Whether to use quantized LoRA (QLoRA).
+    """
     lora_r: int = 64
     lora_alpha: int = 16
     lora_dropout: float = 0.05
     lora_target_modules: List[str] = field(
-        default_factory=lambda: ["c_attn", "attn.c_proj", "w1", "w2"] ##["in_proj","out_proj","c_fc"]
+        default_factory=lambda: ["c_attn", "attn.c_proj", "w1", "w2"]
     )
     lora_weight_path: str = ""
     lora_bias: str = "none"
@@ -175,7 +196,14 @@ def preprocess(
 
 
 class SupervisedDataset(Dataset):
-    """Dataset for supervised fine-tuning."""
+    """
+    Dataset for supervised fine-tuning.
+
+    Args:
+        raw_data (List[Dict]): The raw data in the form of a list of dictionaries.
+        tokenizer (transformers.PreTrainedTokenizer): The tokenizer to use for tokenization.
+        max_len (int): The maximum length of the input sequences.
+    """
 
     def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer, max_len: int):
         super(SupervisedDataset, self).__init__()
@@ -192,6 +220,9 @@ class SupervisedDataset(Dataset):
         return len(self.input_ids)
 
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
+        """
+        Returns a dictionary containing the input IDs, labels, and attention mask for the i-th example.
+        """
         return dict(
             input_ids=self.input_ids[i],
             labels=self.labels[i],
@@ -200,7 +231,14 @@ class SupervisedDataset(Dataset):
 
 
 class LazySupervisedDataset(Dataset):
-    """Dataset for supervised fine-tuning."""
+    """
+    Dataset for supervised fine-tuning with lazy preprocessing.
+
+    Args:
+        raw_data (List[Dict]): The raw data in the form of a list of dictionaries.
+        tokenizer (transformers.PreTrainedTokenizer): The tokenizer to use for tokenization.
+        max_len (int): The maximum length of the input sequences.
+    """
 
     def __init__(self, raw_data, tokenizer: transformers.PreTrainedTokenizer, max_len: int):
         super(LazySupervisedDataset, self).__init__()
@@ -216,6 +254,10 @@ class LazySupervisedDataset(Dataset):
         return len(self.raw_data)
 
     def __getitem__(self, i) -> Dict[str, torch.Tensor]:
+        """
+        Returns a dictionary containing the input IDs, labels, and attention mask for the i-th example.
+        Preprocesses the example if it hasn't been cached yet.
+        """
         if i in self.cached_data_dict:
             return self.cached_data_dict[i]
 

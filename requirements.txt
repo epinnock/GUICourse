@@ -1,0 +1,6 @@
+dataclasses
+torch
+deepspeed
+transformers
+peft
+accelerate

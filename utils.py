@@ -28,12 +28,12 @@ def parse_point(point_str, keep_float=False, split_token=","):
 
 def iou(box1, box2):
     """
-    计算两个边界框的IOU（Intersection over Union）
+    Calculate the Intersection over Union (IoU) of two bounding boxes
     """
     x1, y1, w1, h1 = box1
     x2, y2, w2, h2 = box2
 
-    # 计算相交区域的坐标
+    # Calculate the coordinates of the intersection region
     x_left = max(x1, x2)
     y_top = max(y1, y2)
     x_right = min(x1 + w1, x2 + w2)
@@ -42,10 +42,10 @@ def iou(box1, box2):
     if x_right < x_left or y_bottom < y_top:
         return 0.0
 
-    # 计算相交区域的面积
+    # Calculate the area of the intersection region
     intersection_area = (x_right - x_left) * (y_bottom - y_top)
 
-    # 计算并集区域的面积
+    # Calculate the area of the union region
     box1_area = w1 * h1
     box2_area = w2 * h2
     union_area = box1_area + box2_area - intersection_area
@@ -53,25 +53,25 @@ def iou(box1, box2):
     return iou
 
 def distance_to_rectangle(point, rectangle):
-    """计算点到矩形的距离"""
+    """Calculate the distance from a point to a rectangle"""
     x, y, width, height = rectangle
     px, py = point
 
-    """判断点是否在矩形内部"""
+    """Check if the point is inside the rectangle"""
     if x <= px <= x + width and y <= py <= y + height:
         return 0.0
     
     point_to_x_side = min(abs(x-px), abs(x+width-px))
     point_to_y_side = min(abs(y-py), abs(y+height-py))
 
-    """判断点是否在矩形侧面"""
+    """Check if the point is on the side of the rectangle"""
     if x <= px <= x + width:
         return point_to_y_side
     
     if y <= py <= y + height:
         return point_to_x_side
 
-    """点距离矩形四角最近"""
+    """The point is closest to one of the four corners of the rectangle"""
     point_to_point = math.sqrt(point_to_x_side**2 + point_to_y_side**2)
     return point_to_point
 
