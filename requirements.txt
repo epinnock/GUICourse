@@ -4,3 +4,9 @@ deepspeed
 transformers
 peft
 accelerate
+pandas
+pillow
+fastparquet
+requests
+numpy
+scipy

@@ -84,48 +84,59 @@ def convert_guiact_to_qwen_format(data, data_type, image2path):
 
 def convert_guichat_to_qwen_format(data, image_id2path):
     new_data = []
+    error_count = 0
+    success_count = 0
     for item in data:
-        conversations = []
-        for content in item["text"]:
-            if content["from"] == "human":
-                res_from = "user"
-            elif content["from"] == "gpt":
-                res_from = "assistant"
-            else:
-                print(content["from"])
-            
-            res_value = content["value"]
-            for x in re.findall(r"<image>(.*?)</image>", res_value):
-                path = image_id2path[x]
-                res_value = res_value.replace(f"<image>{x}</image>", f"<img>{path}</img>")
+        try:
+            conversations = []
+            for content in item["text"]:
+                if content["from"] == "human":
+                    res_from = "user"
+                elif content["from"] == "gpt":
+                    res_from = "assistant"
+                else:
+                    print(content["from"])
+                
+                res_value = content["value"]
+                for x in re.findall(r"<image>(.*?)</image>", res_value):
+                    path = image_id2path[x]
+                    res_value = res_value.replace(f"<image>{x}</image>", f"<img>{path}</img>")
 
-            for pos in re.findall(r"<box>(.*?)</box>", res_value):
-                x1, y1, x2, y2 = pos.strip().split()
-                res_value = res_value.replace(f"<box>{pos}</box>", f"<box>({x1},{y1}),({x2},{y2})</box>")
+                for pos in re.findall(r"<box>(.*?)</box>", res_value):
+                    x1, y1, x2, y2 = pos.strip().split()
+                    res_value = res_value.replace(f"<box>{pos}</box>", f"<box>({x1},{y1}),({x2},{y2})</box>")
 
-            conversations.append({
-                "from": res_from,
-                "value": res_value
+                conversations.append({
+                    "from": res_from,
+                    "value": res_value
+                })
+
+            new_data.append({
+                "id": item["uid"],
+                "conversations": conversations
             })
-
-        new_data.append({
-            "id": item["uid"],
-            "conversations": conversations
-        })
+            success_count += 1
+        except Exception as e:
+            print(e)  
+            error_count += 1
+    print(f"error_count: {error_count}")
+    print(f"total_count: {len(new_data)}")
+    print(f"success_count: {success_count}")
     return new_data
 
 if __name__ == "__main__":
     all_instructions = []
 
     # guienv
-    tag = "train_stage2" 
+    old_tag = "train_stage2" 
+    tag =  "test"
     ins_data = read_json(f"./data/ocr_grounding_{tag}_sft_instructions.json")
     image2path = read_json(f"./images/guienv/image_id2path.json")
     new_data = convert_guienv_to_qwen_format(ins_data, image2path)
     all_instructions.extend(new_data)
 
     # guiact
-    tag = "train" 
+    old_tag = "train" 
     for data_name in ["smartphone", "web-single", "web-multi"]:
         ins_data = read_json(f"./data/{data_name}_{tag}_sft_instructions.json")
         image2path = read_json(f"./images/guiact/{data_name}/image_id2path.json")
@@ -134,7 +145,7 @@ if __name__ == "__main__":
 
     # guichat
     ins_data = read_json(f"./data/guichat_data.json")
-    image2path = read_json(f"./images/guiact/image_id2path.json")
+    image2path = read_json(f"./images/guichat/image_id2path.json")
     new_data = convert_guichat_to_qwen_format(ins_data, image2path)
     all_instructions.extend(new_data)
 

@@ -3,18 +3,43 @@ import yaml
 import re
 
 def read_json(path):
+    """
+    Read a JSON file and return its contents as a Python object.
+
+    Args:
+        path (str): The file path to the JSON file.
+
+    Returns:
+        dict: The contents of the JSON file as a Python object.
+    """
     with open(path, 'r', encoding='utf8') as f:
         data = json.loads(f.read())
     return data
 
 def write_json(res, path):
+    """
+    Write a Python object to a JSON file.
+
+    Args:
+        res (dict): The Python object to be written to the file.
+        path (str): The file path where the JSON should be written.
+    """
     with open(path, 'w', encoding='utf8') as f:
         f.write(json.dumps(res, ensure_ascii=False, indent=4))
 
-
 def is_pass_check(item):
+    """
+    Check if all bounding boxes and points in the item are within the image boundaries.
+
+    Args:
+        item (dict): A dictionary containing image size and action information.
+
+    Returns:
+        bool: True if all checks pass, False otherwise.
+    """
     image_w, image_h = item["image_size"]["width"], item["image_size"]["height"]
 
+    # Check bounding boxes
     pred_bbox = re.findall(r"(<box>.*?</box>)", item["question"] + str(item["actions_label"]))
     for bbox in pred_bbox:
         x1, y1, x2, y2 = parse_box(bbox)
@@ -23,6 +48,7 @@ def is_pass_check(item):
         if x1 < 0 or x2 < 0 or y1 < 0 or y2 < 0:
             return False
 
+    # Check points
     pred_point = re.findall(r"(<point>.*?</point>)", item["question"] + str(item["actions_label"]))
     for point in pred_point:
         x, y = parse_point(point)
@@ -32,11 +58,18 @@ def is_pass_check(item):
             return False
     
     return True
-    
+
 def parse_box(box_str, keep_float=False, split_token=","):
     """
-    input: <box>x1, y1, x2, y2</box>
-    output: (x1, y1, x2, y2)
+    Parse a string representation of a bounding box into coordinates.
+
+    Args:
+        box_str (str): String representation of a bounding box.
+        keep_float (bool): If True, return coordinates as floats; otherwise, as integers.
+        split_token (str): The token used to split the coordinates.
+
+    Returns:
+        tuple: The parsed coordinates (x1, y1, x2, y2).
     """
     x1, y1, x2, y2 = box_str.split("<box>")[-1].split("</box>")[0].strip().split(split_token)
     x1, y1, x2, y2 = float(x1), float(y1), float(x2), float(y2)
@@ -47,8 +80,15 @@ def parse_box(box_str, keep_float=False, split_token=","):
 
 def parse_point(point_str, keep_float=False, split_token=","):
     """
-    input: <point>x, y</point>
-    output: (x, y)
+    Parse a string representation of a point into coordinates.
+
+    Args:
+        point_str (str): String representation of a point.
+        keep_float (bool): If True, return coordinates as floats; otherwise, as integers.
+        split_token (str): The token used to split the coordinates.
+
+    Returns:
+        tuple: The parsed coordinates (x, y).
     """
     x, y = point_str.split("<point>")[-1].split("</point>")[0].strip().split(split_token)
     x, y = float(x), float(y)
@@ -58,6 +98,17 @@ def parse_point(point_str, keep_float=False, split_token=","):
         return int(x), int(y)
 
 def convert_related_format_to_related_version1(actions):
+    """
+    Convert the coordinates in actions to a scaled integer format (multiplied by 1000).
+
+    This function is used to standardize the coordinate format across different actions.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        list: The updated list of action dictionaries with converted coordinates.
+    """
     for action in actions:
         if "element" in action:
             position = [str(int(x*1000)) for x in parse_box(action["element"], keep_float=True)]
@@ -81,22 +132,63 @@ def convert_related_format_to_related_version1(actions):
 
 def convert_related_format_to_related_version2(actions):
     """
-    You can convert to the data to your own format here.
+    Placeholder function for potential future format conversion.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        list: The input list of actions (currently unchanged).
     """
     return actions
 
-
 def action_to_json(actions):
+    """
+    Convert actions to a JSON string.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        str: The JSON string representation of the actions.
+    """
     action_str = json.dumps(actions, ensure_ascii=False, indent=4)
     return f"```json\n{action_str}\n```"
 
 def action_to_jsonl(actions):
+    """
+    Convert actions to a JSONL string.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        str: The JSONL string representation of the actions.
+    """
     return json.dumps(actions, ensure_ascii=False)
 
 def action_to_yaml(actions):
+    """
+    Convert actions to a YAML string.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        str: The YAML string representation of the actions.
+    """
     return yaml.dump(actions, sort_keys=False, allow_unicode=True)
 
 def action_to_csv_string(actions):
+    """
+    Convert actions to a CSV string.
+
+    Args:
+        actions (list): A list of action dictionaries.
+
+    Returns:
+        str: The CSV string representation of the actions.
+    """
     res = ""
     for action in actions:
         if "dual_point" in action:
@@ -106,8 +198,18 @@ def action_to_csv_string(actions):
 
         res += "{}\n".format(", ".join(list(action.values())))
     return res
-    
+
 def clear_actions(actions, position_format):
+    """
+    Clear and standardize the actions based on the given position format.
+
+    Args:
+        actions (list or dict): A list of action dictionaries or a single action dictionary.
+        position_format (str): The desired position format for the actions.
+
+    Returns:
+        list: The cleared and standardized list of action dictionaries.
+    """
     if isinstance(actions, dict):
         actions = [actions]
     res = []
@@ -191,15 +293,35 @@ def clear_actions(actions, position_format):
         res.append(action)
     return res
 
-
 def element_to_related_version1_format(element):
+    """
+    Convert an element to the related_version1 format.
+
+    Args:
+        element (str): The element string in the related format.
+
+    Returns:
+        str: The element string in the related_version1 format.
+    """
     position = [str(int(x*1000)) for x in parse_box(element, keep_float=True)]
     return "<box>{}</box>".format(" ".join(position))
 
+
+
 def convert_guienv_data_to_instructions(
     dataset,
-    position_format="related"):
+    position_format="related"
+):
+    """
+    Convert GUI environment data to instructions.
 
+    Args:
+        dataset (list): A list of data items.
+        position_format (str): The desired position format for the instructions.
+
+    Returns:
+        list: A list of instruction dictionaries.
+    """
     instructions = []
     for item in dataset:
         if position_format == "absolue":
@@ -249,7 +371,21 @@ def convert_guiact_data_to_instructions(
     parse_format="CSV_String", # json, jsonl, natural string, yaml
     position_format="related",
     ):
+    """
+    Convert GUI action data to instructions.
 
+    Args:
+        dataset (list): A list of data items.
+        dataset_name (str): The name of the dataset.
+        use_history (bool): Whether to include the history in the instructions.
+        use_logs (bool): Whether to include the logs in the instructions.
+        use_thoughts (bool): Whether to include the thoughts in the instructions.
+        parse_format (str): The desired format for the instructions.
+        position_format (str): The desired position format for the instructions.
+
+    Returns:
+        list: A list of instruction dictionaries.
+    """
     instructions = []
     for item in dataset:
         # check the elements out of image region
@@ -313,10 +449,14 @@ def convert_guiact_data_to_instructions(
     return instructions
 
 
+
+
+
 if __name__ == "__main__":
     # convert guienv data to QA instructions
     data_name = "ocr_grounding"
-    for tag in ["train_stage1", "train_stage2", 'test']: # "train_stage1", "train_stage2", 'test'
+    tags = ["train_stage1", "train_stage2", 'test']
+    for tag in ['test']: # "train_stage1", "train_stage2", 'test'
         base_path = "./data/"
         path = f"{base_path}/{data_name}_{tag}_data.json"
         out_path = f"{base_path}/{data_name}_{tag}_sft_instructions.json"
@@ -331,7 +471,8 @@ if __name__ == "__main__":
 
     # convert guiact data to QA instructions
     for data_name in ["smartphone", "web-single", "web-multi"]:
-        for tag in ["train", "test"]:  # "train", "test" 
+        tags = ["train","test"]
+        for tag in ["test"]:  # "train", "test" 
             base_path = "./data/"
             path = f"{base_path}/{data_name}_{tag}_data.json"
             out_path = f"{base_path}/{data_name}_{tag}_sft_instructions.json"

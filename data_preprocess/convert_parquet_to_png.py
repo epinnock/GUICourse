@@ -18,6 +18,18 @@ def read_data(paths):
             images[index] = row["base64"]
     return images
 
+def load_multi_parquet():
+    paths = ['./data/0000.parquet',
+             './data/0001.parquet',
+             './data/0002.parquet']
+    images = {}
+    for path in paths:
+        df = pd.read_parquet(path)
+        for index, row in df.iterrows():
+            images[index] = row["base64"]
+    return images
+
+
 def write_images(images, base_path):
     image2path = {}
     chunk_id = 0
@@ -82,18 +94,19 @@ def process_ocr_grounding():
     out_path = "./images/guienv"
     images = read_data([
         "./data/ocr_grounding_test_images.parquet",
-        "./data/ocr_grounding_train_stage1_images.parquet",
-        "./data/ocr_grounding_train_stage2_images.parquet"
+       # "./data/ocr_grounding_train_stage1_images.parquet",
+       # "./data/ocr_grounding_train_stage2_images.parquet"
     ])
     print(len(list(images.keys())))
     os.mkdir(out_path)
     write_images(images, out_path)
 
-def process_guiact_web_single():
+def process_guiact_web_single(): 
+    print('processing guiact web single shot')
     out_path = "./images/guiact/web-single"
     images = read_data([
         "./data/web-single_test_images.parquet"
-        "./data/web-single_train_images.parquet",
+       
     ])
     os.makedirs(out_path)
     print(len(list(images.keys())))
@@ -103,7 +116,7 @@ def process_guiact_web_multi():
     out_path = "./images/guiact/web-multi"
     images = read_data([
         "./data/web-multi_test_images.parquet"
-        "./data/web-multi_train_images.parquet",
+       # "./data/web-multi_train_images.parquet",
     ])
     os.makedirs(out_path)
     print(len(list(images.keys())))
@@ -113,7 +126,7 @@ def process_guiact_smartphone():
     out_path = "./images/guiact/smartphone"
     images = read_data([
         "./data/smartphone_test_images.parquet"
-        "./data/smartphone_train_images.parquet",
+     #   "./data/smartphone_train_images.parquet",
     ])
     os.makedirs(out_path)
     print(len(list(images.keys())))
@@ -121,10 +134,19 @@ def process_guiact_smartphone():
 
 def process_guichat():
     out_path = "./images/guichat"
-    images = read_data([
-        "./data/guichat_images.parquet"
-    ])
-    os.makedirs(out_path)
+    
+    paths = ['./data/0000.parquet',
+             './data/0001.parquet',
+             './data/0002.parquet']
+ 
+    images = {}
+    img_paths = {}
+    for path in paths:
+        df = pd.read_parquet(path)
+        for index, row in df.iterrows():
+            images[row["__index_level_0__"]] = row["base64"]
+            
+    os.makedirs(out_path, exist_ok=True)
     print(len(list(images.keys())))
     write_images_version2(images, out_path)
 

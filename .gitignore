@@ -1,0 +1,8 @@
+/data/*
+/images/* 
+UITreeTraversal
+UITreeTraversal/** 
+UITreeTraversal/Info.plist
+UITreeTraversal/UITreeTraversal/UITreeTraversal.entitlements
+.DS_Store
+env/** */
